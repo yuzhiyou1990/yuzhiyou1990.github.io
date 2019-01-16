@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title> Scatter-BOS</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <!-- jQuery first, then Popper.js, then Bootstrap JS. -->
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/popper.js/1.9.3/umd/popper.min.js" integrity="sha384-knhBOwpf8/28D6ygAjJeb0STNDZqfPbKaWQ8wIz/xgSc0xXwKsKhNype8fmfMka2" crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+    <!-- Scatter JS. -->
+    <script src="js/eos.min.js"></script>
+    <script src="js/scatter.min.js"></script>
+
+    <script>
+      //https://eos.greymass.com
+      //https://eosjs.eosplay.com
+      var network = {
+          blockchain: 'eos',
+          protocol: "http",
+          host: 'bostestnet.medishares.net',
+          port: 8888,
+          chainId: '33cc2426f1b258ef8c798c34c0360b31732ea27a2d7e35a65797850a86d1ba85'
+        };
+
+      var currentAccount = null;
+      var eos = null;
+
+      document.addEventListener('scatterLoaded',function(scatterExtension) {
+        scatter.connect('MY_GAME_NAME').then(connected => {
+          if(connected){
+            // EOS
+            eos = scatter.eos(network, Eos)
+          }else{
+            document.getElementById("account").innerHTML= "Scatter 连接失败";
+          }
+        });
+      });
+
+      function login(){
+        var that = this;
+        // scatter.forgetIdentity();
+        scatter.getIdentity({accounts:[network]}).then(result => {
+          currentAccount =  result.accounts[0];
+          // UI
+          document.getElementById("account").innerHTML= currentAccount.name+ '(' + currentAccount.authority+')';
+          // 获取余额
+          that.getBalance(currentAccount.name);
+        }).catch(error => {
+          document.getElementById("account").innerHTML= JSON.stringify(error);
+        });
+      }
+      function getBalance(account) {
+          eos.getCurrencyBalance("eosio.token", account, "BOS").then(function (result) {
+            document.getElementById("balance").innerHTML = result;
+          });
+      }
+
+      function transfer(){
+        var that = this;
+        eos.transaction( {
+            actions: [
+              {
+                account: 'eosio.token',
+                name: 'transfer',
+                authorization: [{
+                  actor: currentAccount.name,             
+                  permission: currentAccount.authority    // "owner"
+                }],
+                data: {
+                  from: currentAccount.name,              
+                  to: 'bostest51112',
+                  quantity: '1.0000 BOS',
+                  memo: 'test'
+                }
+              }
+            ]
+          }
+        ).then(result => {
+          console.log('result');
+          console.log(result.transaction_id);
+        }).catch(error => {
+          console.log('error');
+          console.log(error);
+        });
+
+      }
+    </script>
+  </head>
+  <body>
+    <div>账户：<span id="account"></span></div><br>
+    <div>余额：<span id="balance"></span></div>
+
+    <br>
+
+    <button type="button" class="btn btn-outline-success" onclick="login()">登录</button>
+    <br>
+    <button type="button" class="btn btn-outline-success" onclick="transfer()">转账</button><br><br>
+  </body>
+</html>
